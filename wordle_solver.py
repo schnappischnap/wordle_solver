@@ -4,6 +4,7 @@
 from collections import Counter
 import itertools
 
+
 class Solver:
     BLACK = 0
     YELLOW = 1
@@ -16,25 +17,24 @@ class Solver:
             self.ALL_WORDS = [line.strip() for line in f] + self.ALL_GUESSES
         self.words = self.ALL_GUESSES
 
-
     def solve(self, first_guess="roate", hard_mode=False):
         """Provides the next best guess given the feedback."""
         guess = first_guess
         print("Input feedback as a sequence of 5 letters b=black y=yellow g=green (e.g. bbygb)")
         while True:
-            feedback = read_feedback_input(guess)
+            feedback = read_feedback_input(f"{guess}\t Feedback: ")
             if feedback == (Solver.GREEN,) * 5:
                 return
 
             self.apply_feedback(guess, feedback)
-            
+            print(self.words)
+
             guess = self.best_guess(hard_mode)
-    
 
     def apply_feedback(self, guess, feedback):
         """Filter out any words that don't fit the feedback pattern."""
-        self.words = [word for word in self.words if evaluate(guess, word) == feedback]
-
+        self.words = [word for word in self.words 
+                      if evaluate(guess, word) == feedback and word != guess]
 
     def best_guess(self, hard_mode=False):
         """Return the best guess using a minimax algorithm."""
@@ -47,7 +47,8 @@ class Solver:
         # Score each word by the number of instances of the most common colour-tuple combination.
         total = len(self.words)
         results = [
-            (guess, sum(v*v/total for v in Counter(evaluate(guess, word) for word in self.words).values()))
+            (guess, sum(v*v / total for v in Counter(evaluate(guess, word)
+             for word in self.words).values()))
             for guess in possible_guesses
         ]
 
@@ -60,31 +61,25 @@ class Solver:
             return best_words_in_words.pop()
         return best_words.pop()
 
-
     def autosolve(self, first_guess, answer, hard_mode=False):
         """Return the number of guesses it takes to solve the puzzle."""
         print(f"Solving '{answer}'")
 
-        words = self.ALL_GUESSES
+        self.words = self.ALL_GUESSES
         guess = first_guess
         for i in itertools.count(1):
             feedback = evaluate(guess, answer)
             if feedback == (Solver.GREEN,) * 5:
                 return i
 
-            # Filter out any words that don't fit the feedback pattern.
-            words = [word for word in words if evaluate(guess, word) == feedback]
+            self.apply_feedback(guess, feedback)
 
-            # There isn't any point finding the "best" guess if there are fewer than 3 words left.
-            if len(words) < 3:
-                guess = words[0]
-            else:
-                guess = self.best_guess(words, hard_mode)
-
+            guess = self.best_guess(hard_mode)
 
     def test_first_guess(self, first_guess):
         """Solves every possible solution and returns the analysis."""
-        results = Counter(self.autosolve(first_guess, word) for word in self.ALL_GUESSES)
+        results = Counter(self.autosolve(first_guess, word)
+                          for word in self.ALL_GUESSES)
         total = len(self.ALL_GUESSES)
         print("\t".join(f"{k}: {v}" for k, v in sorted(results.items())))
         print(sum((v*k)/total for k, v in results.items()))
@@ -95,7 +90,8 @@ def evaluate(guess, solution):
     feedback = []
     marked = []  # Which characters in solution have been evaluated.
     for guess_c, solution_c in zip(guess, solution):
-        feedback.append(Solver.GREEN if guess_c == solution_c else Solver.BLACK)
+        feedback.append(Solver.GREEN if guess_c ==
+                        solution_c else Solver.BLACK)
         marked.append(True if guess_c == solution_c else False)
 
     for i, (guess_c, feedback_colour) in enumerate(zip(guess, feedback)):
@@ -115,7 +111,7 @@ def read_feedback_input(prompt):
     """Repeatingly read a feedback input until a valid one is given, then return it."""
     while True:
         try:
-            feedback = [s.lower() for s in input(f"{prompt}\t Feedback: ")]
+            feedback = [s.lower() for s in input(f"{prompt}")]
             if len(feedback) != 5:
                 print("Feedback must be 5 characters long.")
                 continue
@@ -130,5 +126,5 @@ def read_feedback_input(prompt):
 
 
 if __name__ == "__main__":
-    # test_first_guess("roate")  # Takes a long time!
-    Solver().solve("roate") # Win in 3.482 turns on average, 5 maximum.
+    # Solver().test_first_guess("roate")  # Takes a long time!
+    Solver().solve("roate")  # Win in 3.482 turns on average, 5 maximum.
