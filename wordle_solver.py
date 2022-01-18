@@ -44,7 +44,7 @@ class Solver:
 
         possible_guesses = self.words if hard_mode else self.ALL_WORDS
 
-        # Score each word by the number of instances of the most common colour-tuple combination.
+        # Score each word by the average number of instances of each possible evaluation.
         total = len(self.words)
         results = [
             (guess, sum(v*v / total for v in Counter(evaluate(guess, word)
